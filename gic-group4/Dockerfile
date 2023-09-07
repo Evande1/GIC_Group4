@@ -16,32 +16,25 @@ RUN \
   fi
 
 
-# Rebuild the source code only when needed
+# Builder stage - Rebuild the source code only when needed
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-
-# Next.js collects completely anonymous telemetry data about general usage.
-# Learn more here: https://nextjs.org/telemetry
-# Uncomment the following line in case you want to disable telemetry during the build.
-# ENV NEXT_TELEMETRY_DISABLED 1
-
-# RUN yarn build
-# If using npm comment out above and use below instead
+# Next.js collects completely anonymous telemetry data about general usage. Disable telemetry
+ENV NEXT_TELEMETRY_DISABLED 1
 RUN npm run build
 
-# Production image, copy all the files and run next
+# Production stage - copy all the files and run next
 FROM base AS runner
 WORKDIR /app
-
 ENV NODE_ENV production
-# Uncomment the following line in case you want to disable telemetry during runtime.
-# ENV NEXT_TELEMETRY_DISABLED 1
-
+# Disable telemetry during runtime.
+ENV NEXT_TELEMETRY_DISABLED 1
+# Add non-root user to run app for security reasons
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
-
+# Copy assets from builder stage
 COPY --from=builder /app/public ./public
 
 # Set the correct permission for prerender cache
